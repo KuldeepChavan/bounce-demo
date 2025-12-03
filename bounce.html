@@ -64,8 +64,8 @@ window.addEventListener("devicemotion", (e) => {
     if (!e.accelerationIncludingGravity) return;
 
     const acc = e.accelerationIncludingGravity;
-    gyroX = acc.y;
-    gyroY = acc.x;
+    gyroX = -acc.x;
+    gyroY = -acc.y;
 });
 
 // iOS requires permission
