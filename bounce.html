@@ -61,7 +61,6 @@ const gyroForce = 0.4;
 
 // === Device Motion Handling (Gyro) ===
 window.addEventListener("devicemotion", (e) => {
-    alert(e.accelerationIncludingGravity);
     if (!e.accelerationIncludingGravity) return;
 
     const acc = e.accelerationIncludingGravity;
