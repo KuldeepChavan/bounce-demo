@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Canvas Physics Ball</title>
+<style>
+  body, html {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: #000000;
+  }
+  #enable-motion {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: white;
+    border-radius: 8px;
+    z-index: 2;
+  }
+</style>
+</head>
+<body>
+
+<button id="enable-motion">Enable Motion</button>
+<canvas id="canvas"></canvas>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+resize();
+window.onresize = resize;
+
+// === BALL PHYSICS STATE ===
+let x = 200;
+let y = 50;
+let vx = 2;
+let vy = 0;
+
+const radius = 25;
+
+// Physics constants
+const gravity = 0.35;
+const quadraticDrag = 0.002;
+const groundFriction = 0.008;
+
+// Angle-based elasticity tuning
+const baseElasticity = 0.55;   // weakest bounce
+const elasticityBoost = 0.25;  // more bounce for steep angle impact
+
+// Gyro inputs
+let gyroX = 0;
+let gyroY = 0;
+const gyroForce = 0.4;
+
+// === Device Motion Handling (Gyro) ===
+window.addEventListener("devicemotion", (e) => {
+    alert(e.accelerationIncludingGravity);
+    if (!e.accelerationIncludingGravity) return;
+
+    const acc = e.accelerationIncludingGravity;
+    gyroX = acc.x;
+    gyroY = acc.y;
+});
+
+// iOS requires permission
+document.getElementById("enable-motion").onclick = async () => {
+    if (typeof DeviceMotionEvent != "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
+        const response = await DeviceMotionEvent.requestPermission();
+        if (response === "granted") {
+            alert("Motion Enabled!");
+        }
+    } else {
+        alert("Motion access not required on this device.");
+    }
+};
+
+// === MAIN PHYSICS LOOP ===
+function loop() {
+    const w = canvas.width;
+    const h = canvas.height;
+
+    // APPLY GRAVITY
+    vy += gravity;
+
+    // APPLY GYRO FORCES
+    vx += gyroX * gyroForce;
+    vy -= gyroY * gyroForce;
+
+    // QUADRATIC DRAG for natural slowing
+    vx -= quadraticDrag * vx * Math.abs(vx);
+    vy -= quadraticDrag * vy * Math.abs(vy);
+
+    // Update position
+    x += vx;
+    y += vy;
+
+    // === COLLISION DETECTION ===
+    const bottom = h - radius;
+    const right = w - radius;
+
+    // -------- FLOOR COLLISION (WITH ANGLE-BASED ELASTICITY) --------
+    if (y > bottom) {
+        y = bottom;
+
+        // Determine impact angle (steep vs shallow)
+        const angle = Math.atan2(vy, vx);
+
+        // More vertical impact → stronger bounce
+        const angleFactor = Math.abs(Math.sin(angle));
+
+        const effectiveElasticity =
+            baseElasticity + angleFactor * elasticityBoost;
+
+        vy = -vy * effectiveElasticity;
+
+        // Rolling friction
+        vx *= (1 - groundFriction);
+    }
+
+    // -------- CEILING --------
+    if (y < radius) {
+        y = radius;
+        vy = -vy * 0.5;
+    }
+
+    // -------- WALLS --------
+    if (x > right) {
+        x = right;
+        vx = -vx * 0.7;
+    }
+    if (x < radius) {
+        x = radius;
+        vx = -vx * 0.7;
+    }
+
+    // === RENDERING ===
+    ctx.clearRect(0, 0, w, h);
+
+    // BALL
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = "#ff4444";
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = "#ff7777";
+    ctx.fill();
+
+    requestAnimationFrame(loop);
+}
+
+loop();
+
+</script>
+</body>
+</html>
