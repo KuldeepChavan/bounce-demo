@@ -112,7 +112,7 @@ function startMotion() {
 
         // Apply dynamic sensitivity
         ax = -acc.x * gyroForce / mass;
-        ay = -acc.y * gyroForce / mass + gravity;
+        ay = -(acc.y * gyroForce / mass + gravity);
     });
 }
 
